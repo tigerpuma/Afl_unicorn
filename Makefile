@@ -85,6 +85,10 @@ install: all
 	install -m 644 docs/README docs/ChangeLog docs/*.txt $${DESTDIR}$(DOC_PATH)
 	cp -r testcases/ $${DESTDIR}$(MISC_PATH)
 
+uninstall:
+	rm -rf $${DESTDIR}$(HELPER_PATH) $${DESTDIR}$(DOC_PATH) $${DESTDIR}$(MISC_PATH)
+	for i in afl-gcc afl-fuzz afl-showmap afl-g++ afl-clang afl-clang++; do rm -f $${DESTDIR}$(BIN_PATH)/$$i; done
+
 publish: clean
 	test "`basename $$PWD`" = "afl" || exit 1
 	test -f ~/www/afl/releases/$(PROGNAME)-$(VERSION).tgz; if [ "$$?" = "0" ]; then echo; echo "Change program version in Makefile, mmkay?"; echo; exit 1; fi
