@@ -4726,22 +4726,29 @@ static void detect_file_args(char** argv) {
 
 static void setup_signal_handlers(void) {
 
-  signal(SIGHUP,   handle_stop_sig);
-  signal(SIGINT,   handle_stop_sig);
-  signal(SIGTERM,  handle_stop_sig);
-  signal(SIGALRM,  handle_timeout);
-  signal(SIGWINCH, handle_resize);
+  sigset_t empty_set;
+  sigemptyset(&empty_set);
 
-  signal(SIGTSTP, SIG_IGN);
-  signal(SIGPIPE, SIG_IGN);
+  struct sigaction sa;
+  sa.sa_handler = NULL;
+  sa.sa_mask = empty_set;
+  sa.sa_flags = SA_RESTART;
+  sa.sa_sigaction = NULL;
 
-  /* On Solaris, libc doesn't resume interrupted reads :-( */
+  sa.sa_handler = handle_stop_sig;
+  sigaction(SIGHUP, &sa, NULL);
+  sigaction(SIGINT, &sa, NULL);
+  sigaction(SIGTERM, &sa, NULL);
 
-  siginterrupt(SIGHUP, 0);
-  siginterrupt(SIGINT, 0);
-  siginterrupt(SIGTERM, 0);
-  siginterrupt(SIGALRM, 0);
-  siginterrupt(SIGWINCH, 0);
+  sa.sa_handler = handle_timeout;
+  sigaction(SIGALRM, &sa, NULL);
+
+  sa.sa_handler = handle_resize;
+  sigaction(SIGWINCH, &sa, NULL);
+
+  sa.sa_handler = SIG_IGN;
+  sigaction(SIGTSTP, &sa, NULL);
+  sigaction(SIGPIPE, &sa, NULL);
 
 }
 
