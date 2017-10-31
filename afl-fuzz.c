@@ -118,6 +118,7 @@ EXP_ST u8  skip_deterministic,        /* Skip deterministic stages?       */
            shuffle_queue,             /* Shuffle input queue?             */
            bitmap_changed = 1,        /* Time to update bitmap?           */
            qemu_mode,                 /* Running in QEMU mode?            */
+           unicorn_mode,              /* Running in Unicorn mode?         */
            skip_requested,            /* Skip request, via SIGUSR1        */
            run_over10m,               /* Run time over 10 minutes?        */
            persistent_mode,           /* Running in persistent mode?      */
@@ -1989,6 +1990,8 @@ EXP_ST void init_forkserver(char** argv) {
 
   if (!forksrv_pid) {
 
+    /* CHILD PROCESS */
+
     struct rlimit r;
 
     /* Umpf. On OpenBSD, the default fd limit for root users is set to
@@ -2093,6 +2096,8 @@ EXP_ST void init_forkserver(char** argv) {
     exit(0);
 
   }
+
+  /* PARENT PROCESS */
 
   /* Close the unneeded endpoints. */
 
@@ -4358,7 +4363,7 @@ static void show_init_stats(void) {
 
   SAYF("\n");
 
-  if (avg_us > (qemu_mode ? 50000 : 10000)) 
+  if (avg_us > ((qemu_mode || unicorn_mode) ? 50000 : 10000)) 
     WARNF(cLRD "The target binary is pretty slow! See %s/perf_tips.txt.",
           doc_path);
 
@@ -6893,7 +6898,7 @@ EXP_ST void check_binary(u8* fname) {
 
 #endif /* ^!__APPLE__ */
 
-  if (!qemu_mode && !dumb_mode &&
+  if (!qemu_mode && !unicorn_mode && !dumb_mode &&
       !memmem(f_data, f_len, SHM_ENV_VAR, strlen(SHM_ENV_VAR) + 1)) {
 
     SAYF("\n" cLRD "[-] " cRST
@@ -6913,15 +6918,15 @@ EXP_ST void check_binary(u8* fname) {
 
   }
 
-  if (qemu_mode &&
+  if ((qemu_mode || unicorn_mode) &&
       memmem(f_data, f_len, SHM_ENV_VAR, strlen(SHM_ENV_VAR) + 1)) {
 
     SAYF("\n" cLRD "[-] " cRST
          "This program appears to be instrumented with afl-gcc, but is being run in\n"
-         "    QEMU mode (-Q). This is probably not what you want - this setup will be\n"
-         "    slow and offer no practical benefits.\n");
+         "    QEMU or Unicorn mode (-Q or -U). This is probably not what you want -\n"
+         "    this setup will be slow and offer no practical benefits.\n");
 
-    FATAL("Instrumentation found in -Q mode");
+    FATAL("Instrumentation found in -Q or -U mode");
 
   }
 
@@ -7045,8 +7050,9 @@ static void usage(u8* argv0) {
        "  -f file       - location read by the fuzzed program (stdin)\n"
        "  -t msec       - timeout for each run (auto-scaled, 50-%u ms)\n"
        "  -m megs       - memory limit for child process (%u MB)\n"
-       "  -Q            - use binary-only instrumentation (QEMU mode)\n\n"     
- 
+       "  -Q            - use binary-only instrumentation (QEMU mode)\n"     
+       "  -U            - use Unicorn-based instrumentation (Unicorn mode)\n\n"
+
        "Fuzzing behavior settings:\n\n"
 
        "  -d            - quick & dirty mode (skips deterministic steps)\n"
@@ -7589,7 +7595,10 @@ EXP_ST void setup_signal_handlers(void) {
 }
 
 
-/* Rewrite argv for QEMU. */
+/* Rewrite argv for QEMU.
+   Specifically, this changes the command call to:
+       $ {AFL_PATH}/afl-qemu-trace -- {target_bin} {test_input_path and args} 
+ */
 
 static char** get_qemu_argv(u8* own_loc, char** argv, int argc) {
 
@@ -7657,7 +7666,6 @@ static char** get_qemu_argv(u8* own_loc, char** argv, int argc) {
 
 }
 
-
 /* Make a copy of the current command line. */
 
 static void save_cmdline(u32 argc, char** argv) {
@@ -7710,7 +7718,7 @@ int main(int argc, char** argv) {
   gettimeofday(&tv, &tz);
   srandom(tv.tv_sec ^ tv.tv_usec ^ getpid());
 
-  while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:Q")) > 0)
+  while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:QU")) > 0)
 
     switch (opt) {
 
@@ -7878,6 +7886,15 @@ int main(int argc, char** argv) {
 
         break;
 
+      case 'U': /* Unicorn mode */
+
+        if (unicorn_mode) FATAL("Multiple -U options not supported");
+        unicorn_mode = 1;
+
+        if (!mem_limit_given) mem_limit = MEM_LIMIT_UNICORN;
+
+        break;
+
       default:
 
         usage(argv[0]);
@@ -7896,8 +7913,9 @@ int main(int argc, char** argv) {
 
   if (dumb_mode) {
 
-    if (crash_mode) FATAL("-C and -n are mutually exclusive");
-    if (qemu_mode)  FATAL("-Q and -n are mutually exclusive");
+    if (crash_mode)   FATAL("-C and -n are mutually exclusive");
+    if (qemu_mode)    FATAL("-Q and -n are mutually exclusive");
+    if (unicorn_mode) FATAL("-U and -n are mutually exclusive");
 
   }
 
