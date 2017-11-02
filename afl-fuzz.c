@@ -1,5 +1,5 @@
 /*
-   american fuzzy lop - fuzzer code
+   American Fuzzy Lop - fuzzer code
    --------------------------------
 
    Written and maintained by Michal Zalewski <lcamtuf@google.com>
