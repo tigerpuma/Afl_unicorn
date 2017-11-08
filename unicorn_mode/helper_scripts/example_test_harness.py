@@ -11,13 +11,9 @@
 """
 
 import argparse
-import os
-import signal
-import struct
-import time
 
 from unicorn import *
-from unicorn.x86_const import *
+from unicorn.x86_const import *  # TODO: Set correct architecture here as necessary
 
 import unicorn_loader 
 
@@ -25,8 +21,8 @@ import unicorn_loader
 unicorn_heap = None
 
 # Start and end address of emulation
-START_ADDRESS = 0x0804E452
-END_ADDRESS   = 0x0804E46F 
+START_ADDRESS = # TODO: Set start address here
+END_ADDRESS   = # TODO: Set end address here
 
 """
     Implement target-specific hooks in here.
