@@ -90,7 +90,7 @@ class UnicornSimpleHeap(object):
                 self._uc.mem_map(addr, total_chunk_size, UC_PROT_READ | UC_PROT_WRITE)
                 chunk = self.HeapChunk(addr, total_chunk_size, size)
                 if self._debug_print:
-                    print("Allocating 0x{0:x}-byte chunk @ 0x{0:016x}".format(chunk.data_size, chunk.data_addr))
+                    print("Allocating 0x{0:x}-byte chunk @ 0x{1:016x}".format(chunk.data_size, chunk.data_addr))
                 break
             except UcError as e:
                 continue
