@@ -53,6 +53,10 @@ def main():
     uc.hook_add(UC_HOOK_CODE, unicorn_hook_instruction)
 
     # Execute 1 instruction just to startup the forkserver
+    # NOTE: This instruction will be executed again later, so be sure that
+    #       there are no negative consequences to the overall execution state.
+    #       If there are, change the later call to emu_start to no re-execute 
+    #       the first instruction.
     print("Starting the forkserver by executing 1 instruction")
     try:
         uc.emu_start(START_ADDRESS, 0, 0, count=1)
