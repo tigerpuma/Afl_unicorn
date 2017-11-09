@@ -1,7 +1,7 @@
 """
     unicorn_dumper_ida.py
     
-    When run with IDA sitting at a debug breakpoint, this
+    When run with IDA (<v7) sitting at a debug breakpoint, 
     dumps the current state (registers/memory/etc) of
     the process to a directory consisting of an index 
     file with register and segment information and 
