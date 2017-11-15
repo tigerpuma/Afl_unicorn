@@ -1,10 +1,10 @@
 """
-    example_test_harness.py
+    template_test_harness.py
 
-    Loads the context of a process into Unicorn Engine,
-    loads a custom (mutated) inputs, and executes the 
-    desired code. Designed to be used in conjunction with
-    one of the Unicorn Context Dumper scripts.
+    Template which loads the context of a process into a Unicorn Engine,
+    instance, loads a custom (mutated) inputs, and executes the 
+    desired code. Designed to be used in conjunction with one of the
+    Unicorn Context Dumper scripts.
 
     Author:
         Nathan Voss <njvoss299@gmail.com>
@@ -32,6 +32,7 @@ def unicorn_hook_instruction(uc, address, size, user_data):
 
     # TODO: Setup hooks and handle anything you need to here
     #    - For example, hook malloc/free/etc. and handle it internally
+    pass
 
 #------------------------
 #---- Main test function  
@@ -72,19 +73,24 @@ def main():
         input_file.close()
 
         # TODO: Apply constraints to mutated input here
+        raise exceptions.NotImplementedError('No constraints on the mutated inputs have been set!')
         
         # Allocate a new buffer and put the input into it
         buf_addr = unicorn_heap.malloc(len(input_content))
         uc.mem_write(buf_addr, input_content)
-        print("Allocated mutated input buffer @ 0x{0:08x}".format(buf_addr))
+        print("Allocated mutated input buffer @ 0x{0:016x}".format(buf_addr))
 
         # TODO: Set the input into the state so it will be handled
+        raise exceptions.NotImplementedError('The mutated input was not loaded into the Unicorn state!')
         
     # Run the test
-    print("Executing from 0x{0:08x} to 0x{1:08x}".format(START_ADDRESS, END_ADDRESS))
+    print("Executing from 0x{0:016x} to 0x{1:016x}".format(START_ADDRESS, END_ADDRESS))
     try:
         result = uc.emu_start(START_ADDRESS, END_ADDRESS, timeout=0, count=0)
     except UcError as e:
+        # If something went wrong during emulation a signal is raised to force this 
+        # script to crash in a way that AFL can detect ('uc.force_crash()' should be
+        # called for any condition that you want AFL to treat as a crash).
         print("Execution failed with error: {}".format(e))
         uc.dump_regs() 
         uc.force_crash(e)
